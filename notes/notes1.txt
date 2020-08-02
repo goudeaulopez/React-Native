@@ -1,0 +1,80 @@
+/* generate propject with expo cli
+
+npx expo-cli init food
+
+yelp.com/fusion
+
+Client ID
+GkHoG7Agh0EOsaN8Dx_uoA
+
+API Key
+zu13SfHLLEFK1rgDOrPBfCPCJuKvCCPiK79DGloN5mciR3e9dVFNYqeocAhcCvDuO8bK0Xug732aNgXch_BLpZPDZ--DyijAOgTA0614L3wjH3xTPyqUUbhz7AMRX3Yx
+
+-> busenness endpoint -> buseness search -> 
+
+npm install react-navegation
+
+expo install react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context @react-native-community/masked-view
+
+github.com/expo/vector-icons
+
+
+
+/* codepen template
+
+https://unpkg.com/react@15.3.1/dist/react.min.js
+https://unpkg.com/react-native-web@0.0.44/dist/ReactNative.js
+https://cdnjs.cloudflare.com/ajax/libs/styled-components/4.3.2/styled-components.min.js
+
+<div id="react-root"></div>
+
+const { AppRegistry, StyleSheet, Text, View, Image } = ReactNative;
+
+class App extends React.Component {
+  render() {
+    return (
+      <View style={styles.root}>
+        <Header headerText="Title" />
+      </View>
+    )
+  }
+}
+
+const Header = (props) => (
+  <View style={styles.header}>
+    <Text>{props.headerText}</Text>
+  </View>
+)
+
+// styles, root
+
+const styles = StyleSheet.create({
+  root: {
+    width: 360,
+    height: 640,
+    backgroundColor: 'yellow'
+  },
+  header: {
+    backgroundColor: '#545353',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    color: '#fff'
+  }
+});
+
+const AppWrapper = () => (
+  <View style={{
+    alignItems: 'center',
+    justifyContent: 'left',
+    flex: 1
+  }}>
+    <App />
+  </View>
+)
+
+AppRegistry.registerComponent('App', () => AppWrapper)
+AppRegistry.runApplication(
+  'App',
+  { rootTag: document.getElementById('react-root') }
+)

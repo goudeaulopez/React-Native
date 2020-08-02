@@ -1,0 +1,14 @@
+{
+  "BlogPosts": [
+    {
+      "title": "leo",
+      "content": "Goudeau lopez",
+      "id": 1
+    },
+    {
+      "title": "Maria",
+      "content": "Belen",
+      "id": 4
+    }
+  ]
+}

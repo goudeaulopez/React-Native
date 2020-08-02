@@ -1,0 +1,391 @@
+import React from 'react';
+import { createAppContainer } from 'react-navigation';
+import { createStackNavigator } from 'react-navigation-stack';
+import IndexScreen from './src/screens/IndexScreen';
+import { Provider } from './src/context/BlogContext';
+import ShowScreen from './src/screens/ShowScreen';
+import CreateScreen from './src/screens/CreateScreen';
+import EditScreen from './src/screens/EditScreen';
+
+const navigator = createStackNavigator(
+  {
+    Index: IndexScreen,
+    Show: ShowScreen,
+    Create: CreateScreen,
+    Edit: EditScreen,
+  },
+  {
+    initialRouteName: 'Index',
+    defaultNavigationOptions: {
+      title: 'Blogs',
+    },
+  }
+);
+
+const App = createAppContainer(navigator);
+
+export default () => {
+  return (
+    <Provider>
+      <App />
+    </Provider>
+  );
+};
+
+********************************************************************************************
+
+import React, { useContext, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Button,
+  TouchableOpacity,
+} from 'react-native';
+import { Context } from '../context/BlogContext';
+import { Feather } from '@expo/vector-icons';
+
+const IndexScreen = ({ navigation }) => {
+  const { state, deleteBlogPost, getBlogPosts } = useContext(Context);
+
+  useEffect(() => {
+    getBlogPosts();
+
+    const listener = navigation.addListener('didFocus', () => {
+      getBlogPosts();
+    });
+
+    return () => {
+      listener.remove();
+    };
+  }, []);
+
+  return (
+    <View>
+      <FlatList
+        data={state}
+        keyExtractor={(blogPost) => blogPost.title}
+        renderItem={({ item }) => {
+          return (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Show', { id: item.id })}
+            >
+              <View style={styles.row}>
+                <Text style={styles.title}>
+                  {item.title} - {item.id}
+                </Text>
+                <TouchableOpacity onPress={() => deleteBlogPost(item.id)}>
+                  <Feather style={styles.icon} name="trash" />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+      />
+    </View>
+  );
+};
+
+IndexScreen.navigationOptions = ({ navigation }) => {
+  return {
+    headerRight: () => (
+      <TouchableOpacity onPress={() => navigation.navigate('Create')}>
+        <Feather name="plus" size={30} />
+      </TouchableOpacity>
+    ),
+  };
+};
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    borderTopWidth: 1,
+    borderColor: 'gray',
+  },
+  title: {
+    fontSize: 18,
+  },
+  icon: {
+    fontSize: 24,
+  },
+});
+
+export default IndexScreen;
+
+*******************************************************************************************
+import React, { useContext } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Context } from '../context/BlogContext';
+import { EvilIcons } from '@expo/vector-icons';
+
+const ShowScreen = ({ navigation }) => {
+  const { state } = useContext(Context);
+
+  const blogPost = state.find(
+    (blogPost) => blogPost.id === navigation.getParam('id')
+  );
+
+  return (
+    <View>
+      <Text>{blogPost.title}</Text>
+      <Text>{blogPost.content}</Text>
+    </View>
+  );
+};
+
+ShowScreen.navigationOptions = ({ navigation }) => {
+  return {
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('Edit', { id: navigation.getParam('id') })
+        }
+      >
+        <EvilIcons name="pencil" size={35} />
+      </TouchableOpacity>
+    ),
+  };
+};
+
+const styles = StyleSheet.create({});
+
+export default ShowScreen;
+
+
+
+*******************************************************************************************
+
+
+*******************************************************************************************
+
+import React, { useContext } from 'react';
+import { StyleSheet } from 'react-native';
+import { Context } from '../context/BlogContext';
+import BlogPostForm from '../components/BlogPostForm';
+
+const EditScreen = ({ navigation }) => {
+  const id = navigation.getParam('id');
+  const { state, editBlogPost } = useContext(Context);
+
+  const blogPost = state.find(blogPost => blogPost.id === id);
+
+  return (
+    <BlogPostForm
+      initialValues={{ title: blogPost.title, content: blogPost.content }}
+      onSubmit={(title, content) => {
+        editBlogPost(id, title, content, () => navigation.pop());
+      }}
+    />
+  );
+};
+
+const styles = StyleSheet.create({});
+
+export default EditScreen;
+
+
+*******************************************************************************************
+
+
+*******************************************************************************************
+
+import React, { useContext } from 'react';
+import { StyleSheet } from 'react-native';
+import { Context } from '../context/BlogContext';
+import BlogPostForm from '../components/BlogPostForm';
+
+const CreateScreen = ({ navigation }) => {
+  const { addBlogPost } = useContext(Context);
+
+  return (
+    <BlogPostForm
+      onSubmit={(title, content) => {
+        addBlogPost(title, content, () => navigation.navigate('Index'));
+      }}
+    />
+  );
+};
+
+const styles = StyleSheet.create({});
+
+export default CreateScreen;
+
+
+*******************************************************************************************
+
+
+*******************************************************************************************
+import React, { useReducer } from 'react';
+
+export default (reducer, actions, initialState) => {
+  const Context = React.createContext();
+
+  const Provider = ({ children }) => {
+    const [state, dispatch] = useReducer(reducer, initialState);
+
+    // actions === { addBlogPost: (dispatch) => { return () => {} } }
+    const boundActions = {};
+    for (let key in actions) {
+      boundActions[key] = actions[key](dispatch);
+    }
+
+    return (
+      <Context.Provider value={{ state, ...boundActions }}>
+        {children}
+      </Context.Provider>
+    );
+  };
+
+  return { Context, Provider };
+};
+
+
+
+*******************************************************************************************
+
+
+*******************************************************************************************
+import createDataContext from './createDataContext';
+import jsonServer from '../api/jsonServer';
+
+const blogReducer = (state, action) => {
+  switch (action.type) {
+    case 'get_blogposts':
+      return action.payload;
+    case 'edit_blogpost':
+      return state.map(blogPost => {
+        return blogPost.id === action.payload.id ? action.payload : blogPost;
+      });
+    case 'delete_blogpost':
+      return state.filter(blogPost => blogPost.id !== action.payload);
+    default:
+      return state;
+  }
+};
+
+const getBlogPosts = dispatch => {
+  return async () => {
+    const response = await jsonServer.get('/blogposts');
+
+    dispatch({ type: 'get_blogposts', payload: response.data });
+  };
+};
+
+const addBlogPost = dispatch => {
+  return async (title, content, callback) => {
+    await jsonServer.post('/blogposts', { title, content });
+
+    if (callback) {
+      callback();
+    }
+  };
+};
+
+const deleteBlogPost = dispatch => {
+  return async id => {
+    await jsonServer.delete(`/blogposts/${id}`);
+
+    dispatch({ type: 'delete_blogpost', payload: id });
+  };
+};
+
+const editBlogPost = dispatch => {
+  return async (id, title, content, callback) => {
+    await jsonServer.put(`/blogposts/${id}`, { title, content });
+
+    dispatch({
+      type: 'edit_blogpost',
+      payload: { id, title, content }
+    });
+    if (callback) {
+      callback();
+    }
+  };
+};
+
+export const { Context, Provider } = createDataContext(
+  blogReducer,
+  { addBlogPost, deleteBlogPost, editBlogPost, getBlogPosts },
+  []
+);
+
+
+
+
+*******************************************************************************************
+
+
+*******************************************************************************************
+
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
+
+const BlogPostForm = ({ onSubmit, initialValues }) => {
+  const [title, setTitle] = useState(initialValues.title);
+  const [content, setContent] = useState(initialValues.content);
+
+  return (
+    <View>
+      <Text style={styles.label}>Enter Title:</Text>
+      <TextInput
+        style={styles.input}
+        value={title}
+        onChangeText={text => setTitle(text)}
+      />
+      <Text style={styles.label}>Enter Content:</Text>
+      <TextInput
+        style={styles.input}
+        value={content}
+        onChangeText={text => setContent(text)}
+      />
+      <Button title="Save Blog Post" onPress={() => onSubmit(title, content)} />
+    </View>
+  );
+};
+
+BlogPostForm.defaultProps = {
+  initialValues: {
+    title: '',
+    content: ''
+  }
+};
+
+const styles = StyleSheet.create({
+  input: {
+    fontSize: 18,
+    borderWidth: 1,
+    borderColor: 'black',
+    marginBottom: 15,
+    padding: 5,
+    margin: 5
+  },
+  label: {
+    fontSize: 20,
+    marginBottom: 5,
+    marginLeft: 5
+  }
+});
+
+export default BlogPostForm;
+
+
+
+*******************************************************************************************
+
+
+*******************************************************************************************
+import axios from 'axios';
+
+export default axios.create({
+  baseURL: 'http://f76b281d5352.ngrok.io'
+});
+
+*******************************************************************************************
+
+
+
+
